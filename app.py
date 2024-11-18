@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_option_menu import option_menu
 import os
 import base64
 
@@ -9,6 +8,14 @@ def get_base64_image(image_path):
         return None
     with open(image_path, "rb") as img_file:
         return base64.b64encode(img_file.read()).decode()
+
+# Initialize session state for navigation
+if 'selected_page' not in st.session_state:
+    st.session_state.selected_page = "Home"
+
+# Function to set the selected page
+def set_page(page):
+    st.session_state.selected_page = page
 
 # Set page configuration
 st.set_page_config(
@@ -168,6 +175,32 @@ def apply_inline_css(encoded_image):
                 background: #2e86de;
                 border-radius: 4px;
             }}
+            /* Sidebar Button Styles */
+            /* Target buttons within the sidebar and make them full-width */
+            [data-testid="stSidebar"] button {{
+                width: 100% !important;
+                padding: 10px 20px !important;
+                margin-bottom: 10px !important;
+                background-color: #ffffff !important;
+                border: 2px solid #2e86de !important;
+                border-radius: 8px !important;
+                text-align: left !important;
+                cursor: pointer !important;
+                transition: background-color 0.3s, color 0.3s !important;
+                font-size: 1em !important;
+                font-weight: 500 !important;
+                color: #2e86de !important;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+            }}
+            [data-testid="stSidebar"] button:hover {{
+                background-color: #2e86de !important;
+                color: #ffffff !important;
+            }}
+            /* Active button styling */
+            [data-testid="stSidebar"] button.active {{
+                background-color: #2e86de !important;
+                color: #ffffff !important;
+            }}
             /* Responsive Design */
             @media (max-width: 768px) {{
                 .profile-container {{
@@ -198,21 +231,58 @@ def apply_inline_css(encoded_image):
     else:
         st.warning("Profile image not found! Please add 'profile.jpg' to the app directory.")
 
-
 apply_inline_css(encoded_image)
 
-# Sidebar Navigation Menu
+# Sidebar Navigation Menu Using Buttons Styled as Full-Width Buttons
 with st.sidebar:
-    selected = option_menu(
-        menu_title="Navigation",  # required
-        options=["Home", "Work Experience", "Projects", "Publications", "Skills"],  # required
-        icons=["house", "briefcase", "folder", "book", "tools"],  # optional
-        menu_icon="cast",  # optional
-        default_index=0,  # optional
-    )
+    st.markdown("## Navigation")
+    # Define navigation options with emojis
+    nav_options = [
+        {"label": "🏠 Home", "value": "Home"},
+        {"label": "💼 Work Experience", "value": "Work Experience"},
+        {"label": "🛠️ Projects", "value": "Projects"},
+        {"label": "📚 Publications", "value": "Publications"},
+        {"label": "💡 Skills", "value": "Skills"},
+    ]
+    
+    # Render buttons
+    for option in nav_options:
+        # Determine if the button is active
+        is_active = st.session_state.selected_page == option["value"]
+        
+        # Create a button without the 'css_class' argument
+        if st.button(option["label"], key=option["value"]):
+            set_page(option["value"])
+    
+    # Apply CSS to style active buttons
+    active_page = st.session_state.selected_page
+    for option in nav_options:
+        if option["value"] == active_page:
+            # Generate CSS to style the active button
+            # Streamlit assigns unique IDs to buttons, making it hard to target them precisely.
+            # Instead, we can use the combination of button labels and Streamlit's existing classes.
+            st.markdown(
+                f"""
+                <style>
+                /* Target the button with the specific label */
+                [data-testid="stSidebar"] button[aria-label="{option['label']}"] {{
+                    background-color: #2e86de !important;
+                    color: white !important;
+                    border: 2px solid #2e86de !important;
+                }}
+                [data-testid="stSidebar"] button[aria-label="{option['label']}"]:hover {{
+                    background-color: #1b4f72 !important;
+                    color: white !important;
+                }}
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
 # Main Content with Animations
-if selected == "Home":
+selected_page = st.session_state.selected_page
+
+if selected_page == "Home":
     st.title("👋 Welcome to My Portfolio")
     st.markdown(
         """
@@ -227,7 +297,7 @@ if selected == "Home":
         """
     )
 
-elif selected == "Work Experience":
+elif selected_page == "Work Experience":
     st.title("💼 Work Experience")
     experiences = [
         {
@@ -268,7 +338,7 @@ elif selected == "Work Experience":
         )
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif selected == "Projects":
+elif selected_page == "Projects":
     st.title("🛠️ Projects")
     projects = [
         {
@@ -295,7 +365,7 @@ elif selected == "Projects":
         )
     st.markdown('</div>', unsafe_allow_html=True)
 
-elif selected == "Publications":
+elif selected_page == "Publications":
     st.title("📚 Publications")
     publications = [
         {
@@ -315,7 +385,7 @@ elif selected == "Publications":
         st.markdown(f"**Journal:** {pub['journal']} | **Date:** {pub['date']}")
         st.markdown("---")
 
-elif selected == "Skills":
+elif selected_page == "Skills":
     st.title("💡 Skills & Technical Knowledge")
     skills = {
         "Programming Languages": ["Python", "C++", "Objective-C", "Java", "HTML", "CSS", "JavaScript", "SQL"],
